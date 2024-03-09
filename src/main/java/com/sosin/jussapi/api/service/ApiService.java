@@ -1,9 +1,6 @@
 package com.sosin.jussapi.api.service;
 
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -16,12 +13,14 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import com.sosin.jussapi.api.dto.request.TransferRequestDto;
 import com.sosin.jussapi.api.dto.response.AccountListResponseDto;
 import com.sosin.jussapi.api.dto.response.AccountResponseDto;
 import com.sosin.jussapi.api.dto.response.CardListResponseDto;
 import com.sosin.jussapi.api.dto.response.ResponseDataDto;
 import com.sosin.jussapi.api.dto.response.ToPayResponseDto;
 import com.sosin.jussapi.api.dto.response.TransactionListResponseDto;
+import com.sosin.jussapi.api.dto.response.TransactionResponseDto;
 import com.sosin.jussapi.api.dto.response.UsedMoneyResponseDto;
 import com.sosin.jussapi.api.dto.response.UserTokenResponseDto;
 
@@ -95,6 +94,20 @@ public class ApiService {
         return response.getBody();
     }
 
+    public AccountListResponseDto getRecent(String token, int type) {
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", token);
+
+        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<AccountListResponseDto> response = restTemplate.exchange(
+            "http://localhost:8000/api/v1/account/recent?account_type="+type, HttpMethod.GET, httpEntity, AccountListResponseDto.class);
+        return response.getBody();
+    }
+
     public UsedMoneyResponseDto getUsed(String token) {
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         HttpHeaders headers = new HttpHeaders();
@@ -153,6 +166,35 @@ public class ApiService {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<CardListResponseDto> response = restTemplate.exchange(
             "http://localhost:8000/api/v1/card/" + (ym != "" ? "?ym="+ym:""), HttpMethod.GET, httpEntity, CardListResponseDto.class);
+        
+        return response.getBody();
+    }
+    
+    public TransactionResponseDto transferMoney(String token, TransferRequestDto requestDto) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", token);
+
+        HttpEntity<TransferRequestDto> httpEntity = new HttpEntity<>(requestDto, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<TransactionResponseDto> response = restTemplate.exchange(
+            "http://localhost:8000/api/v1/transfer/", HttpMethod.POST, httpEntity, TransactionResponseDto.class);
+        
+        return response.getBody();
+    }
+    
+    public Boolean toggleFavorite(String token, String id) {
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", token);
+
+        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<Boolean> response = restTemplate.exchange(
+            "http://localhost:8000/api/v1/account/favorite/" + id, HttpMethod.PUT, httpEntity, Boolean.class);
         
         return response.getBody();
     }

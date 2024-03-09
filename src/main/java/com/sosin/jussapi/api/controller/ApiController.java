@@ -2,11 +2,13 @@ package com.sosin.jussapi.api.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sosin.jussapi.api.dto.request.TransferRequestDto;
 import com.sosin.jussapi.api.dto.response.AccountListResponseDto;
 import com.sosin.jussapi.api.dto.response.AccountResponseDto;
 import com.sosin.jussapi.api.dto.response.CardListResponseDto;
 import com.sosin.jussapi.api.dto.response.ToPayResponseDto;
 import com.sosin.jussapi.api.dto.response.TransactionListResponseDto;
+import com.sosin.jussapi.api.dto.response.TransactionResponseDto;
 import com.sosin.jussapi.api.dto.response.UsedMoneyResponseDto;
 import com.sosin.jussapi.api.dto.response.UserTokenResponseDto;
 import com.sosin.jussapi.api.service.ApiService;
@@ -21,6 +23,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PutMapping;
+
+
 
 
 @RestController
@@ -33,7 +39,6 @@ public class ApiController {
     
     @PostMapping("/start")    
     public UserTokenResponseDto startJuss() {
-
         return apiService.startJuss();
     }
 
@@ -47,6 +52,11 @@ public class ApiController {
     @GetMapping("/account/{id}")
     public AccountResponseDto getAccount(@RequestHeader("Authorization") String token, @PathVariable(name = "id") String id) {
         return apiService.getAccount(token, id);
+    }
+
+    @GetMapping("/recent")
+    public AccountListResponseDto getRecent(@RequestHeader("Authorization") String token, @RequestParam(name = "type") int type) {
+        return apiService.getRecent(token, type);
     }
     //
     @GetMapping("/used")
@@ -70,6 +80,19 @@ public class ApiController {
     public CardListResponseDto getCards(@RequestHeader("Authorization") String token, @RequestParam(name = "ym") String ym) {
         return apiService.getCards(token, ym);
     }
-    
+
+    @PostMapping("/transfer")
+    public TransactionResponseDto transferMoney(
+        @RequestHeader("Authorization") String token, 
+        @RequestBody TransferRequestDto data) {
+
+        log.info(""+data.getReceiverId() + data.getSenderId());
+        return apiService.transferMoney(token, data);
+    }
+
+    @PutMapping("/favorite/{id}")
+    public Boolean putMethodName(@RequestHeader("Authorization") String token, @PathVariable(name = "id") String id) {
+        return apiService.toggleFavorite(token, id);
+    }
 
 }

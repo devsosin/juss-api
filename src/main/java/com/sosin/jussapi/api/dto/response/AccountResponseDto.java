@@ -19,4 +19,7 @@ public class AccountResponseDto {
     private boolean isShow;
     @JsonProperty("is_favorite")
     private boolean isFavorite;
+    
+    @JsonProperty("is_own")
+    private boolean isOwn;
 }
