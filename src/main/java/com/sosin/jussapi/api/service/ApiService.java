@@ -2,7 +2,7 @@ package com.sosin.jussapi.api.service;
 
 import java.util.Map;
 
-import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -29,30 +29,32 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ApiService {
-    
-    public UserTokenResponseDto startJuss() {
+
+    @Value("${server.url}")
+    private String serverUrl;
+
+    private <T> T requestApi(String url, String method, String token, Class<T> responseType) {
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
+        if (!token.equals("")) {
+            headers.set("Authorization", token);
+        }
         HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
 
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<UserTokenResponseDto> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/user/", HttpMethod.POST, httpEntity, UserTokenResponseDto.class);
-        UserTokenResponseDto userTokenResponseDto = response.getBody();
+        ResponseEntity<T> response = restTemplate.exchange(
+            serverUrl+url, method.equals("POST") ? HttpMethod.POST : HttpMethod.GET, 
+            httpEntity, responseType);
+        return response.getBody();
+    }
 
-        RestTemplate restTemplate2 = new RestTemplate();
+    
+    public UserTokenResponseDto startJuss() {
+        UserTokenResponseDto userTokenResponseDto = requestApi("/user/", "POST", "", UserTokenResponseDto.class);
 
-        HttpHeaders headers2 = new HttpHeaders();
-        headers2.setContentType(MediaType.APPLICATION_JSON);
-        headers2.set("Authorization", userTokenResponseDto.getTokenType() + " " + userTokenResponseDto.getAccessToken());
-        HttpEntity<MultiValueMap<String, String>> httpEntity2 = new HttpEntity<>(params, headers2);
-
-        ResponseDataDto<Map<String, Object>> response2 = restTemplate2.exchange(
-                    "http://localhost:8000/api/v1/data/", 
-                    HttpMethod.POST, httpEntity2,
-                    new ParameterizedTypeReference<ResponseDataDto<Map<String, Object>>>() {}).getBody();
+        String token = userTokenResponseDto.getTokenType() + " " + userTokenResponseDto.getAccessToken();
+        ResponseDataDto<Map<String, Object>> response2 = requestApi("/data/", "POST", token, ResponseDataDto.class);
 
         if (!response2.getMsg().equals("data created")) {
             log.info(response2.getMsg());
@@ -64,124 +66,51 @@ public class ApiService {
     
 
     public AccountListResponseDto getAccounts(String token, String isShow) {
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
-
-        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        log.info("http://localhost:8000/api/v1/account/?is_show=" + (isShow!=null ? isShow : ""));
-        ResponseEntity<AccountListResponseDto> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/account/" + (isShow!=null ? "?is_show="+isShow : ""), HttpMethod.GET, httpEntity, AccountListResponseDto.class);
-        
-        return response.getBody();
+        AccountListResponseDto accountList = requestApi(
+            "/account/" + (isShow!=null ? "?is_show="+isShow : ""), "GET", token, AccountListResponseDto.class);
+        return accountList;
     }
     public AccountResponseDto getAccount(String token, String id) {
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
-
-        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        log.info("http://localhost:8000/api/v1/account/"+id);
-        ResponseEntity<AccountResponseDto> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/account/"+id, HttpMethod.GET, httpEntity, AccountResponseDto.class);
-        
-        return response.getBody();
+        AccountResponseDto account = requestApi(
+            "/account/"+id, "GET", token, AccountResponseDto.class);
+        return account;
     }
 
     public AccountListResponseDto getRecent(String token, int type) {
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
-
-        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<AccountListResponseDto> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/account/recent?account_type="+type, HttpMethod.GET, httpEntity, AccountListResponseDto.class);
-        return response.getBody();
+        AccountListResponseDto accountList = requestApi(
+            "/account/recent?account_type="+type, "GET", token, AccountListResponseDto.class);
+        return accountList;
     }
 
     public UsedMoneyResponseDto getUsed(String token) {
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
-
-        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<UsedMoneyResponseDto> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/transaction/used/", HttpMethod.GET, httpEntity, UsedMoneyResponseDto.class);
-        
-        return response.getBody();
+        UsedMoneyResponseDto usedMoney = requestApi(
+            "/transaction/used/", "GET", token, UsedMoneyResponseDto.class);
+        return usedMoney;
     }
 
     public ToPayResponseDto getTopay(String token) {
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
-
-        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<ToPayResponseDto> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/transaction/topay/", HttpMethod.GET, httpEntity, ToPayResponseDto.class);
-        
-        return response.getBody();
+        ToPayResponseDto toPay = requestApi(
+            "/transaction/topay/", "GET", token, ToPayResponseDto.class);
+        return toPay;
     }
 
     // pagination
     public TransactionListResponseDto getTransactions(String token, String id) {
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
-
-        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        log.info("http://localhost:8000/api/v1/transaction/"+id);
-        ResponseEntity<TransactionListResponseDto> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/transaction/"+id, HttpMethod.GET, httpEntity, TransactionListResponseDto.class);
-        
-        return response.getBody();
+        TransactionListResponseDto transactionList = requestApi(
+            "/transaction/"+id, "GET", token, TransactionListResponseDto.class);
+        return transactionList;
     }
 
     public CardListResponseDto getCards(String token, String ym) {
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
-
-        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<CardListResponseDto> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/card/" + (ym != "" ? "?ym="+ym:""), HttpMethod.GET, httpEntity, CardListResponseDto.class);
-        
-        return response.getBody();
+        CardListResponseDto cardList = requestApi(
+            "/card/" + (ym != "" ? "?ym="+ym:""), "GET", token, CardListResponseDto.class);
+        return cardList;
     }
     
     public TransactionResponseDto transferMoney(String token, TransferRequestDto requestDto) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
-
-        HttpEntity<TransferRequestDto> httpEntity = new HttpEntity<>(requestDto, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<TransactionResponseDto> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/transfer/", HttpMethod.POST, httpEntity, TransactionResponseDto.class);
-        
-        return response.getBody();
+        TransactionResponseDto cardList = requestApi(
+            "/transfer/", "POST", token, TransactionResponseDto.class);
+        return cardList;
     }
     
     public Boolean toggleFavorite(String token, String id) {
@@ -193,9 +122,10 @@ public class ApiService {
         HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
 
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Boolean> response = restTemplate.exchange(
-            "http://localhost:8000/api/v1/account/favorite/" + id, HttpMethod.PUT, httpEntity, Boolean.class);
-        
-        return response.getBody();
+        Boolean isSuccess = restTemplate.exchange(
+            serverUrl+"/account/favorite/" + id, HttpMethod.PUT, 
+            httpEntity, Boolean.class).getBody();
+
+        return isSuccess;
     }
 }
